@@ -1,0 +1,18 @@
+[package]
+name = "harbor-engine"
+description = "Harbor's emulator host: the FM-1 machine on its own thread, audio ring, MIDI, automatic clock, saves"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+fm1-core.workspace = true
+fm1-soc.workspace = true
+rtrb = "0.3"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+base64 = "0.22"
+sha2 = "0.10"
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"

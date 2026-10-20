@@ -1,0 +1,19 @@
+[workspace]
+resolver = "2"
+members = ["harbor-engine", "harbor-jni", "harbor-bench"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+[workspace.dependencies]
+fm1-core = { path = "../third_party/fm1-emu/crates/fm1-core" }
+fm1-soc = { path = "../third_party/fm1-emu/crates/fm1-soc" }
+harbor-engine = { path = "harbor-engine" }
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+debug = "line-tables-only"

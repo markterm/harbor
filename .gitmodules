@@ -1,0 +1,3 @@
+[submodule "third_party/fm1-emu"]
+	path = third_party/fm1-emu
+	url = https://github.com/joakimeriksson/fm1-emu

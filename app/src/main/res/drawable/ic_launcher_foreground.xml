@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- sail -->
+    <path android:fillColor="#F2A33A" android:pathData="M54,28 L54,62 L72,62 Z" />
+    <path android:fillColor="#F2A33A" android:fillAlpha="0.7" android:pathData="M51,34 L51,62 L38,62 Z" />
+    <!-- hull -->
+    <path android:fillColor="#F2A33A" android:pathData="M36,65 L74,65 L68,71 L42,71 Z" />
+    <!-- one sine wave -->
+    <path
+        android:strokeColor="#F2A33A"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:pathData="M30,78 C34,72 38,72 42,78 C46,84 50,84 54,78 C58,72 62,72 66,78 C70,84 74,84 78,78" />
+</vector>

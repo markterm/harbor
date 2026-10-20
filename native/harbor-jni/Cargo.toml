@@ -1,0 +1,20 @@
+[package]
+name = "harbor-jni"
+description = "Harbor's native library: JNI bindings and AAudio output around harbor-engine"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+name = "harbor"
+crate-type = ["cdylib"]
+
+[dependencies]
+harbor-engine.workspace = true
+jni = "0.21"
+log = "0.4"
+
+[target.'cfg(target_os = "android")'.dependencies]
+ndk = { version = "0.9", features = ["audio", "api-level-31"] }
+android_logger = "0.14"
+libc = "0.2"

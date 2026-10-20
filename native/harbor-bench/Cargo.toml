@@ -1,0 +1,10 @@
+[package]
+name = "harbor-bench"
+description = "M0 benchmark: how many times real time a firmware runs on this device, per clock, JIT on/off"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+harbor-engine.workspace = true
+fm1-soc.workspace = true

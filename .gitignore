@@ -1,0 +1,15 @@
+.gradle/
+.kotlin/
+build/
+local.properties
+*.iml
+.idea/
+.DS_Store
+/native/target/
+captures/
+*.apk
+*.aab
+
+# signing keys never belong in the repo
+*.jks
+*.keystore

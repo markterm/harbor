@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Harbor</string>
+    <style name="Theme.Harbor" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/room</item>
+    </style>
+    <color name="room">#18191B</color>
+    <color name="amber">#F2A33A</color>
+</resources>

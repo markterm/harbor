@@ -1,0 +1,121 @@
+diff --git a/crates/fm1-core/src/jit.rs b/crates/fm1-core/src/jit.rs
+index 87e5f4d..0338612 100644
+--- a/crates/fm1-core/src/jit.rs
++++ b/crates/fm1-core/src/jit.rs
+@@ -62,13 +62,14 @@ const _: () = assert!(std::mem::offset_of!(Ctx, slot) == OFF_SLOT as usize);
+ 
+ // ------------------------------------------------------------------ executable memory
+ // macOS (Apple silicon): a MAP_JIT mapping, writable or executable per thread, toggled around a
+-// write. Linux: a plain read-write-execute mapping (a hardened kernel that refuses one, SELinux's
+-// execmem, leaves the interpreter running: `new` gives None). That gives up W^X there: a stray
+-// write into the code cache would be executable (an mprotect toggle around each write would keep
+-// it, at a system call per compiled block). Both flush the instruction cache for what was
+-// written. (Code is only appended, so a missing flush would seldom show: the tests cannot prove
+-// it. Tested on Apple silicon's cores only, which need the instruction side, CTR_EL0.DIC = 0, but
+-// not the data side, IDC = 1; Cortex-A cores such as a Raspberry Pi's need both.)
++// write. Linux and Android (the same kernel interface): a plain read-write-execute mapping (a
++// hardened kernel that refuses one, SELinux's execmem, leaves the interpreter running: `new`
++// gives None). That gives up W^X there: a stray write into the code cache would be executable
++// (an mprotect toggle around each write would keep it, at a system call per compiled block).
++// Both flush the instruction cache for what was written. (Code is only appended, so a missing
++// flush would seldom show: the tests cannot prove it. Tested on Apple silicon's cores and a
++// Tensor G2's (Cortex-X1, A78, A55), which need the instruction side, CTR_EL0.DIC = 0, but not
++// the data side, IDC = 1; older Cortex-A cores such as a Raspberry Pi 4's need both.)
+ extern "C" {
+     fn mmap(addr: *mut c_void, len: usize, prot: c_int, flags: c_int, fd: c_int, off: i64) -> *mut c_void;
+ }
+@@ -79,13 +80,13 @@ extern "C" {
+ }
+ #[cfg(target_os = "macos")]
+ const MAP_FLAGS: c_int = 0x0002 | 0x1000 | 0x0800; // PRIVATE | ANON | JIT
+-#[cfg(target_os = "linux")]
++#[cfg(any(target_os = "linux", target_os = "android"))]
+ const MAP_FLAGS: c_int = 0x02 | 0x20; // PRIVATE | ANONYMOUS
+ 
+ /// Make freshly written code visible to instruction fetch (what `__clear_cache` does on
+ /// AArch64): clean the data cache lines to the point of unification, invalidate the instruction
+ /// cache lines, then synchronise. Line sizes from CTR_EL0.
+-#[cfg(target_os = "linux")]
++#[cfg(any(target_os = "linux", target_os = "android"))]
+ unsafe fn flush_icache(start: *const u8, len: usize) {
+     let ctr: u64;
+     core::arch::asm!("mrs {}, ctr_el0", out(reg) ctr, options(nomem, nostack));
+@@ -138,7 +139,7 @@ impl CodeCache {
+                 pthread_jit_write_protect_np(1);
+                 sys_icache_invalidate(dst as *mut c_void, bytes);
+             }
+-            #[cfg(target_os = "linux")]
++            #[cfg(any(target_os = "linux", target_os = "android"))]
+             {
+                 std::ptr::copy_nonoverlapping(words.as_ptr() as *const u8, dst, bytes);
+                 flush_icache(dst, bytes);
+diff --git a/crates/fm1-core/src/lib.rs b/crates/fm1-core/src/lib.rs
+index fc70453..8e1b948 100644
+--- a/crates/fm1-core/src/lib.rs
++++ b/crates/fm1-core/src/lib.rs
+@@ -19,16 +19,16 @@ use fm1_isa::{DecodeError, Instruction, SlotKind};
+ ///
+ /// Width-specific accessors keep MMIO side effects honest: a byte read must
+ /// not silently widen into a word read of a peripheral register.
+-#[cfg(all(target_arch = "aarch64", any(target_os = "macos", target_os = "linux")))]
++#[cfg(all(target_arch = "aarch64", any(target_os = "macos", target_os = "linux", target_os = "android")))]
+ mod jit;
+-#[cfg(all(target_arch = "aarch64", any(target_os = "macos", target_os = "linux")))]
++#[cfg(all(target_arch = "aarch64", any(target_os = "macos", target_os = "linux", target_os = "android")))]
+ mod jit_a64;
+-#[cfg(all(target_arch = "aarch64", any(target_os = "macos", target_os = "linux")))]
++#[cfg(all(target_arch = "aarch64", any(target_os = "macos", target_os = "linux", target_os = "android")))]
+ pub use jit::JitMem;
+ #[cfg(target_arch = "wasm32")]
+ pub mod jit_wasm;
+ /// (no JIT on this host: the type exists so buses compile everywhere)
+-#[cfg(not(all(target_arch = "aarch64", any(target_os = "macos", target_os = "linux"))))]
++#[cfg(not(all(target_arch = "aarch64", any(target_os = "macos", target_os = "linux", target_os = "android"))))]
+ #[derive(Clone, Copy, Debug)]
+ pub struct JitMem {
+     pub ram: *mut u8,
+@@ -197,7 +197,7 @@ pub struct Cpu {
+     pub icache_x: Vec<Option<LineX>>,
+     /// Compile hot blocks to native code (AArch64 macOS hosts).
+     pub jit_on: bool,
+-    #[cfg(all(target_arch = "aarch64", any(target_os = "macos", target_os = "linux")))]
++    #[cfg(all(target_arch = "aarch64", any(target_os = "macos", target_os = "linux", target_os = "android")))]
+     jit: Option<Box<jit::Jit>>,
+     /// (the wasm32 build: hot blocks as WebAssembly modules, see jit_wasm.rs)
+     #[cfg(target_arch = "wasm32")]
+@@ -441,7 +441,7 @@ impl Cpu {
+                 sync!();
+                 return Ok((n, false));
+             };
+-            #[cfg(all(target_arch = "aarch64", any(target_os = "macos", target_os = "linux")))]
++            #[cfg(all(target_arch = "aarch64", any(target_os = "macos", target_os = "linux", target_os = "android")))]
+             if self.jit_on && !careful {
+                 if let Some(mem) = jit_mem {
+                     if self.jit.is_none() {
+@@ -519,7 +519,7 @@ impl Cpu {
+                     }
+                 }
+             }
+-            #[cfg(not(any(all(target_arch = "aarch64", any(target_os = "macos", target_os = "linux")), target_arch = "wasm32")))]
++            #[cfg(not(any(all(target_arch = "aarch64", any(target_os = "macos", target_os = "linux", target_os = "android")), target_arch = "wasm32")))]
+             let _ = (id, &jit_mem);
+             for i in start..start + len {
+                 // SAFETY: build_block pushed start..start+len into bops and
+@@ -725,7 +725,7 @@ impl Cpu {
+     }
+ 
+     /// The compiled body of the block starting at pc, if there is one.
+-    #[cfg(all(target_arch = "aarch64", any(target_os = "macos", target_os = "linux")))]
++    #[cfg(all(target_arch = "aarch64", any(target_os = "macos", target_os = "linux", target_os = "android")))]
+     fn jit_body_at(&self, pc: u32, ram_tracked: bool) -> Option<*const u8> {
+         // RAM bodies validate their own immutable code snapshot before execution.
+         if self.bmap.is_empty() || (!ram_tracked && !(0x0200_0000..0x0400_0000).contains(&pc)) {
+@@ -752,7 +752,7 @@ impl Cpu {
+             #[cfg(target_arch = "wasm32")]
+             self.bver.clear();
+             self.bmap.iter_mut().for_each(|x| *x = 0);
+-            #[cfg(all(target_arch = "aarch64", any(target_os = "macos", target_os = "linux")))]
++            #[cfg(all(target_arch = "aarch64", any(target_os = "macos", target_os = "linux", target_os = "android")))]
+             if let Some(j) = self.jit.as_mut() {
+                 j.reset();
+             }

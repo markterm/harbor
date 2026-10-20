@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Harbor as a MIDI device other apps can play: one input port, no output (ui-spec §11.2). -->
+<devices>
+    <device manufacturer="Mark White" product="Harbor (FM-1 emulator)">
+        <input-port name="MIDI IN" />
+    </device>
+</devices>
