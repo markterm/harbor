@@ -5,8 +5,8 @@ on-device measurements. Nothing in Harbor depends on it being merged: the submod
 `patches/0001-fm1-core-enable-the-aarch64-jit-on-android.patch` applied, and that patch is the
 PR's commit (`git diff` of it against the pinned commit, so `tools/apply-patches.sh` takes it).
 
-- **Status:** opened 2026-10-20 from `markterm/fm1-emu`, branch `android-jit` (one commit on
-  `7856393`, the pinned commit).
+- **Status:** open as [#26](https://github.com/joakimeriksson/fm1-emu/pull/26) (2026-10-20),
+  from `markterm/fm1-emu`, branch `android-jit` (one commit on `7856393`, the pinned commit).
 - **Title:** fm1-core: run the AArch64 JIT on Android too
 - **Evidence** (Pixel 7 Pro, Tensor G2, Android 16; `docs/m0-results/Pixel_7_Pro.tsv`):
   - fm1-core's tests cross-built and run on the phone: 36 passed, the three `jit::tests` among
