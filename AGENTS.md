@@ -70,8 +70,8 @@ On Git Bash, `adb shell` paths need `MSYS_NO_PATHCONV=1` (see `tools/m0-bench.sh
   M-VAVE's stock firmware is bring-your-own. Tests take a package from the environment.
 - **fm1-emu is upstream.** Don't edit `third_party/fm1-emu` in place: change it through a
   numbered patch in `patches/` (keep it applying to the pinned commit) and keep the set small.
-  The one patch today enables the JIT on Android; `docs/upstream-pr.md` holds the prepared
-  upstream PR. Opening it publishes under the owner's GitHub account, so it waits for their go-ahead.
+  Today: 0001 enables the JIT on Android (`docs/upstream-pr.md` holds the prepared upstream PR),
+  0002 decodes and-not with a register above r7, 0003 models the P33 power registers. Opening it publishes under the owner's GitHub account, so it waits for their go-ahead.
 - **The audio callback is real time.** `AudioOut::render` and the AAudio callback must not
   allocate, lock anything contended or log. The engine thread runs ahead of the output by
   `lead` frames through an `rtrb` ring; MIDI is stamped with CLOCK_MONOTONIC and applied at its

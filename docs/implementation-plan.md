@@ -184,6 +184,13 @@ engineering milestones and risks.
   16 ms of wall time, so it sees two changes, and the tests' `lcd_rev > 2` passed only when a
   sample caught a frame half drawn. They now wait for `lcd_rev >= 2` (`drawn`) and print the
   engine's state when a wait times out; clean in 8 runs alone and 4 at double load.
+- [x] Melodee 1.4.5 (Hub) never drew or sounded: 60 ms into boot it checks its supply setup by
+  reading the P33 power registers back, and fm1-emu didn't model P33 (0x13E08/0x13E0C fell to
+  "unknown", reads 0), so it parked itself in `fm1_core1_failure`. `patches/0003` models P33 as
+  registers that read back what was written (and, or, xor; the RTC bank). A sweep of the Hub's 78
+  packages with and without it changes only Melodee. On the Pixel 7 Pro it runs two cores at
+  0.85x at 240 MHz with a key held; the automatic clock steps it to 200 MHz (1.16x, no late
+  frames). Report upstream with 0002's issue.
 - [ ] A fresh install on the Pixel 7 Pro (Android 16) asked for notification permission at first
   launch, before onboarding. Harbor's code asks only when "Keep playing in background" is turned
   on (`rememberBackgroundToggle`), so find what triggers it before the Play review, which
