@@ -188,4 +188,14 @@ mod tests {
         let (len, name) = fm1_core::decode_info(0x1313_f194, 0x0202_dc7c).expect("undecoded: is patch 0004 applied?");
         assert_eq!((len, name), (4, "r_mov_r_i_lsl_r_9"));
     }
+
+    #[test]
+    fn far_forward_bit_test_branch_decodes() {
+        // SLOOP 2.8's `if ((r0 & 1) == 0) goto +17522` (60 ff 01 00 39 22), which halted it while
+        // recording until patches/0005 took forward offsets of 16 KB and more; Kawa's boot too
+        let (len, name) = fm1_core::decode_info(0x2239_0001_ff60, 0x0202_19c8).expect("undecoded: is patch 0005 applied?");
+        assert_eq!((len, name), (6, "if_r_h_eq_i_goto_i_l7"));
+        // a near one still decodes as before
+        assert_eq!(fm1_core::decode_info(0x1589_0001_ff60, 0x0202_19c8), Some((6, "if_r_h_eq_i_goto_i")));
+    }
 }

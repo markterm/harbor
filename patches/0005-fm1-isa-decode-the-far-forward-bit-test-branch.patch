@@ -1,0 +1,61 @@
+diff --git a/crates/fm1-isa/src/generated_isa.rs b/crates/fm1-isa/src/generated_isa.rs
+index 4619590..eaeaeb5 100644
+--- a/crates/fm1-isa/src/generated_isa.rs
++++ b/crates/fm1-isa/src/generated_isa.rs
+@@ -2159,6 +2159,31 @@ pub static ISA: &[IsaEntry] = &[
+             SlotSpec { kind: SlotKind::Scaled, pieces: &[(32, 44)], mult: 2, adj: 0, hi: 0, lo: 0 },
+         ],
+     },
++    // the same branch with a forward offset of 16 KB or more (bits 45..46 set, bit 47 clear):
++    // the offset is bits 32..47, signed, as in if_r_h_eq_i_goto_i_l6, and neither row took this
++    // range; not in the corpora: SLOOP 2.8 runs it while recording, Kawa at boot. After the row
++    // above, so its words keep decoding as they did
++    IsaEntry {
++        name: "if_r_h_eq_i_goto_i_l7",
++        syntax: "if ((R & #h) == #i) goto #i",
++        len: 6,
++        count: 0,
++        mask: 0x000080000000ffff_u64,
++        match_: 0x000000000000ff60_u64,
++        group: "misc",
++        alt: &[
++        ],
++        samples: &[
++            0x22390001ff60_u64,
++            0x33ea0001ff60_u64,
++        ],
++        slots: &[
++            SlotSpec { kind: SlotKind::Imm, pieces: &[(28, 31)], mult: 0, adj: 0, hi: 0, lo: 0 },
++            SlotSpec { kind: SlotKind::Composed, pieces: &[(16, 27)], mult: 0, adj: 0, hi: 0, lo: 0 },
++            SlotSpec { kind: SlotKind::Const, pieces: &[], mult: 0, adj: 0, hi: 0, lo: 0 },
++            SlotSpec { kind: SlotKind::Scaled, pieces: &[(32, 46)], mult: 2, adj: 0, hi: 0, lo: 0 },
++        ],
++    },
+     IsaEntry {
+         name: "if_r_ne_r_goto_i_3",
+         syntax: "if (R != R) goto -#i",
+diff --git a/isa/fm1.yaml b/isa/fm1.yaml
+index 978a072..0a5b9cc 100644
+--- a/isa/fm1.yaml
++++ b/isa/fm1.yaml
+@@ -3186,6 +3186,20 @@ instructions:
+     count: 771
+     samples: ["60ff000f7801", "60ff003c2301", "60ff003c2501", "60ff01000e03", "60ff01001301", "60ff01001404", "60ff01001604", "60ff01002401", "60ff01003801", "60ff01007403", "60ff01007b03", "60ff01007e04", "60ff01008915", "60ff01009703", "60ff0100ba03", "60ff0100c901", "60ff0100e601", "60ff0100eb03", "60ff0100ef02", "60ff0100f005", "60ff0100f103", "60ff01102601", "60ff01104401", "60ff01104801", "60ff0110e702", "60ff01302601", "60ff01400201", "60ff01400401", "60ff01500c01", "60ff01600702", "60ff01600802", "60ff01601d02", "60ff01603102", "60ff01605002", "60ff01605302", "60ff01609602", "60ff0160d401", "60ff0160f401", "60ff0170db01", "60ff01804d02", "60ff01a01901", "60ff01c07c0a", "60ff0200f406", "60ff020d1700", "60ff02106401", "60ff02709a04", "60ff02801201", "60ff02901001", "60ff029d0600", "60ff02e01a01", "60ff03000400", "60ff03000b00", "60ff03001000", "60ff03001900", "60ff03002300", "60ff03002600", "60ff03002700", "60ff03003b00", "60ff03004500", "60ff03006f00", "60ff0300d400", "60ff03100600", "60ff03100900", "60ff03100a00", "60ff03100b00", "60ff03100f00", "60ff03102200", "60ff03102700", "60ff03104300", "60ff03105100", "60ff03200e00", "60ff03202800", "60ff03209101", "60ff0320aa01", "60ff03300700", "60ff03300b00", "60ff03300c00", "60ff03301a00", "60ff03308c00", "60ff03400500", "60ff03400600", "60ff03400800", "60ff03401000", "60ff03500b00", "60ff03600400", "60ff03601000", "60ff03604f00", "60ff03703902", "60ff03900600", "60ff03a00500", "60ff03a00e00", "60ff03d05a00", "60ff04001101", "60ff04001d01", "60ff04007c01", "60ff04430302", "60ff05000900", "60ff05024b1d", "60ff06201500", "60ff07000500", "60ff07000f00", "60ff07002400", "60ff07004901", "60ff07007900", "60ff07601e00", "60ff07a03400", "60ff08002503", "60ff08004705", "60ff08007501", "60ff0c003c00", "60ff0c004500", "60ff0c10e300", "60ff0c301500", "60ff0c604002", "60ff0c606a02", "60ff0d025703", "60ff0e005200", "60ff0f000300", "60ff0f000800", "60ff0f000b00", "60ff0f000f00", "60ff0f001000", "60ff0f001100", "60ff0f001200", "60ff0f005f00", "60ff0f008700", "60ff0f101100", "60ff0f101e00", "60ff0f103200", "60ff0f107400", "60ff0f200a00", "60ff0f203c00", "60ff0f204500", "60ff0f205000", "60ff0f205300", "60ff0f304d00", "60ff0f400e00", "60ff0f401000", "60ff0f402100", "60ff0f500400", "60ff0f504100", "60ff0f505100", "60ff0f702500", "60ff10005f01", "60ff1000b102", "60ff17002000", "60ff18000900", "60ff18100c00", "60ff18401101", "60ff1f001100", "60ff1f100900", "60ff1f100f00", "60ff1f101e00", "60ff1f202900", "60ff1f300100", "60ff1f401200", "60ff1f402400", "60ff1f601b00", "60ff1f701400", "60ff1f701900", "60ff22000500", "60ff22005200", "60ff2b008100", "60ff30000900", "60ff30001700", "60ff30003a00", "60ff30005f00", "60ff30106100", "60ff30202700", "60ff35fe6f02", "60ff38101403", "60ff39ff3b00", "60ff3e405100", "60ff3f601100", "60ff3fc00b00", "60ff3fd00b00", "60ff3fe00b00", "60ff3ff00b00", "60ff40005601", "60ff40371c00", "60ff4a19560b", "60ff55ffed00", "60ff57ffae01", "60ff66008701", "60ff6b001101", "60ff700e0f00", "60ff7bf57001", "60ff7f005100", "60ff7f005400", "60ff7f082300", "60ff7f0c2000", "60ff7f100500", "60ff7f100600", "60ff7f100800", "60ff7f100a00", "60ff7f100d00", "60ff7f102400", "60ff7f200800", "60ff7f202900", "60ff7f203100", "60ff7f204500", "60ff7f204900", "60ff7f204a00", "60ff7f2c3100", "60ff7f300800", "60ff7f504106", "60ff7f504705", "60ff7f508305", "60ff7f601100", "60ff7f700300", "60ff8bff6500", "60ff9bff1400", "60ffae01b806", "60ffb0b76300", "60ffda010c03", "60ffe0280500", "60ffe3ff4f00", "60ffe9fd7104", "60fff010e300", "60fff0370402", "60fff2ff0c01", "60fff8ff6900", "60fff9fea802", "60fffc0f1200", "60fffc0f2700", "60fffc0f4a00", "60fffc0fda01", "60fffc100300", "60fffc1f0d00", "60fffc200700", "60fffc2f1d00", "60fffc3f0e00", "60fffc3f1200", "60fffc3fda00", "60fffc400500", "60fffc8fa400", "60fffe001600", "60fffe003500", "60fffe00f208", "60fffe00f508", "60fffe105201", "60fffe40ab00", "60fffe605c00", "60fffe609d00", "60fffe700b00", "60ffff000101", "60ffff000200", "60ffff000300", "60ffff000301", "60ffff000400", "60ffff000500", "60ffff000501", "60ffff000600", "60ffff000700", "60ffff000800", "60ffff000900", "60ffff000b00", "60ffff000c00", "60ffff000c01", "60ffff000d00", "60ffff000e00", "60ffff000f00", "60ffff001100", "60ffff001300", "60ffff001500", "60ffff001600", "60ffff001700", "60ffff001800", "60ffff001900", "60ffff001d00", "60ffff002000", "60ffff002100", "60ffff002300", "60ffff002400", "60ffff002800", "60ffff002a00", "60ffff002c00", "60ffff002d00", "60ffff002e00", "60ffff003100", "60ffff003200", "60ffff003300", "60ffff003700", "60ffff003801", "60ffff003f00", "60ffff004000", "60ffff005000", "60ffff005400", "60ffff005500", "60ffff005900", "60ffff006000", "60ffff007703", "60ffff007b00", "60ffff007d00", "60ffff008300", "60ffff008900", "60ffff008b00", "60ffff009800", "60ffff009d01", "60ffff00a000", "60ffff00a600", "60ffff00e300", "60ffff00e400", "60ffff00e500", "60ffff00f900", "60ffff100300", "60ffff100500", "60ffff100600", "60ffff100700", "60ffff100b00", "60ffff100c00", "60ffff101a00", "60ffff101e00", "60ffff101f00", "60ffff103d00", "60ffff104300", "60ffff104500", "60ffff104f00", "60ffff105200", "60ffff106900", "60ffff10ed00", "60ffff10f408", "60ffff200100", "60ffff200400", "60ffff200700", "60ffff200a00", "60ffff200b00", "60ffff200c00", "60ffff201400", "60ffff201500", "60ffff201800", "60ffff201b00", "60ffff202200", "60ffff204100", "60ffff205000", "60ffff205400", "60ffff205c00", "60ffff205e00", "60ffff207900", "60ffff208700", "60ffff300400", "60ffff300500", "60ffff300700", "60ffff300e00", "60ffff301400", "60ffff301900", "60ffff305400", "60ffff305700", "60ffff305f00", "60ffff306300", "60ffff400200", "60ffff400600", "60ffff400700", "60ffff400800", "60ffff400a00", "60ffff400c00", "60ffff401000", "60ffff401d00", "60ffff404600", "60ffff405100", "60ffff407700", "60ffff40a100", "60ffff500300", "60ffff500800", "60ffff500900", "60ffff500a00", "60ffff500b00", "60ffff500d00", "60ffff501000", "60ffff501100", "60ffff501b00", "60ffff501d00", "60ffff502900", "60ffff505100", "60ffff507f00", "60ffff508500", "60ffff509400", "60ffff50bd00", "60ffff600400", "60ffff600500", "60ffff600600", "60ffff601000", "60ffff601d00", "60ffff601e00", "60ffff602c00", "60ffff602f00", "60ffff605400", "60ffff605b00", "60ffff606400", "60ffff607c00", "60ffff700800", "60ffff700b00", "60ffff700c00", "60ffff700d00", "60ffff700e00", "60ffff701900", "60ffff703900", "60ffff703a00", "60ffff800300", "60ffff802600", "60ffff802b00", "60ffff802f00", "60ffff807800", "60ffff808400", "60ffff90c900", "60ffffa02e00", "60ffffa03700", "60ffffb00800", "60ffffb01a00", "60ffffb01b00", "60ffffb01f00", "60ffffb05b00", "60ffffc00800", "60ffffd01000", "60ffffd01500", "60ffffd02800", "60ffffd02f00", "60ffffd05001", "60ffffe02400", "60ffffe02a00", "60ffffe03200", "60ffffe04b02", "60ffffe05400", "60ffffe0b701", "60fffff00300", "60fffff00600", "60fffff01000"]
+     status: auto
++  # the same branch with a forward offset of 16 KB or more: the offset is bits 32..47, signed, as
++  # in if_r_h_eq_i_goto_i_l6, and neither row took this range; after the row above, so its words
++  # keep decoding as they did. Not in the corpora (SLOOP 2.8 runs it while recording, Kawa at boot)
++  - name: if_r_h_eq_i_goto_i_l7
++    syntax: "if ((R & #h) == #i) goto #i"
++    len: 6
++    mask: "80000000ffff"
++    match: "00000000ff60"
++    group: branch
++    fields:
++      f0: [16, 46]
++    count: 0
++    samples: ["60ff01003922", "60ff0100ea33"]
++    status: auto
+   - name: r_mov_r_r_10
+     syntax: "R = R ^ R"
+     len: 4

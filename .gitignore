@@ -13,3 +13,6 @@ captures/
 # signing keys never belong in the repo
 *.jks
 *.keystore
+
+# demo videos and other large media: kept beside the code, not in git
+/media/

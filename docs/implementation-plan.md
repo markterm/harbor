@@ -156,8 +156,8 @@ engineering milestones and risks.
   the decode. A halt now keeps its reason (instruction and pc, cores, time since boot), which goes
   into the event log and so into "Copy a report"; before, it was dropped.
 - [ ] A sweep of the Hub's 79 packages (4 s each, interpreted, three keys held): CTL-1, MC-1 and
-  386DX halt on other undecoded `0x?064` words (`2300f064`, `0e00f064`, `ae00f064`). Kawa halts
-  at 829 ms with no input (`60 ff 01 00 …`). Bubba, Melodee and Tonitor make no sound. 13 start
+  386DX halt on other undecoded `0x?064` words (`2300f064`, `0e00f064`, `ae00f064`). Kawa halted
+  at 829 ms with no input (fixed by `patches/0005`, below). Bubba, Melodee and Tonitor make no sound. 13 start
   the second core; the halts come from decoding, not from dual-core running. Report upstream
   (`docs/upstream-issue-decoder.md`) before patching more of the table locally.
 - [x] Bundled Hub snapshot refreshed to 21 Oct (74 → 79 firmwares; the Hub's catalog.json grew
@@ -208,6 +208,17 @@ engineering milestones and risks.
   launch, before onboarding. Harbor's code asks only when "Keep playing in background" is turned
   on (`rememberBackgroundToggle`), so find what triggers it before the Play review, which
   `docs/play-store.md` describes the other way.
+- [x] Reported from SLOOP while recording: "halted ... UnknownInstruction { raw: ffc022390001ff60 }
+  at pc 0x020219c2", 6.7 s after boot. The word is in SLOOP 2.8 (isod89's GitHub release; the
+  Hub has 2.7.1), at 0x020219c8: `60 ff 01 00 39 22`, `if ((r0 & 1) == 0) goto +17522`.
+  fm1-isa splits this 6-byte bit-test branch into two rows, forward offsets under 16 KB (bits
+  45-47 clear) and backward ones (bit 47 set), so a forward jump of 16-64 KB had no row. Kawa's
+  boot halt was the same branch. `patches/0005` adds the row (after the near one, so its words
+  decode as before); both jumps land where neighbouring branches go (SLOOP's function exit,
+  which 11 other branches target; Kawa's, the instruction just before it). SLOOP 2.8 passes the
+  firmware tests; Kawa now boots and draws (silent on a single key, but it's a tracker). A sweep
+  of 91 packages (the Hub's, older and newer SLOOPs, Clipper, LCD-4, SLOOP ALG) halts only on CTL-1,
+  MC-1 and 386DX, as before. Not yet upstream.
 
 ---
 

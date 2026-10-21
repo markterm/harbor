@@ -2,8 +2,8 @@
 
 Not filed: opening it publishes under the owner's GitHub account, so it waits for their go-ahead.
 The OberVave fix (`patches/0002`) is now fm1-emu#33, and DUELL's (`0004`) #35: the issue is for
-the words that are left (CTL-1, MC-1, 386DX, Kawa). Before filing, drop OberVave's row and point
-at those PRs.
+the words that are left (CTL-1, MC-1, 386DX). Kawa's halt was a different gap, the far forward
+`ff60` branch (`patches/0005`). Before filing, drop OberVave's row and point at those PRs.
 
 ---
 
