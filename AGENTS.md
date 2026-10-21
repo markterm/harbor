@@ -57,7 +57,7 @@ HARBOR_TEST_FWSC=/path/felucca-1.6.1.fwsc cargo test --release -p harbor-engine 
 ./gradlew connectedDebugAndroidTest        # needs a device
 ```
 
-The firmware tests skip silently without `HARBOR_TEST_FWSC` (they report "4 passed" in 0.00 s);
+The firmware tests skip silently without `HARBOR_TEST_FWSC` (they report "6 passed" in 0.00 s);
 run them with a real package when touching the engine. Felucca is at
 `https://thefirmwarehub.com/fw/felucca-1.6.1.fwsc`.
 

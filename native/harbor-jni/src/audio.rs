@@ -4,6 +4,11 @@
 //! engine's 44.1 kHz frames are resampled in the callback. A disconnected device (headphones
 //! unplugged, a USB interface removed) closes the stream; the app reopens it after its routing
 //! check, through `restartAudio`.
+//!
+//! Some devices open an exclusive (MMAP) stream and then kill it at once, every time. A stream
+//! that dies within a few seconds of opening, or won't start, makes the next open ask for less:
+//! shared, then shared without the low-latency path. The step lasts for the process, since a
+//! reopen would only fail the same way.
 
 use std::sync::{Arc, Mutex};
 
@@ -27,7 +32,14 @@ mod imp {
         AudioCallbackResult, AudioDirection, AudioError, AudioFormat, AudioPerformanceMode, AudioSharingMode,
         AudioStream, AudioStreamBuilder, AudioStreamState, AudioUsage,
     };
-    use std::sync::atomic::{AtomicBool, Ordering};
+    use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
+    use std::time::{Duration, Instant};
+
+    /// What the next open asks for: 0 exclusive, 1 shared, 2 shared without low latency.
+    static LEVEL: AtomicU8 = AtomicU8::new(0);
+    const LEVELS: u8 = 3;
+    /// A stream that dies sooner than this after opening is the device refusing the mode.
+    const EARLY: Duration = Duration::from_secs(3);
 
     /// An AAudio stream handle. AAudio's control calls may come from any thread as long as
     /// they don't race a close; every use goes through the host's mutex, which serialises them.
@@ -45,11 +57,23 @@ mod imp {
         stream: Option<Stream>,
         /// set by the error callback: the stream is gone
         dead: Arc<AtomicBool>,
+        /// when the current stream opened, and at which level
+        opened: Instant,
+        level: u8,
     }
 
     impl Output {
         pub fn new(out: Arc<Mutex<AudioOut>>, low_latency: bool) -> Self {
-            Output { out, low_latency, stream: None, dead: Arc::new(AtomicBool::new(false)) }
+            Output { out, low_latency, stream: None, dead: Arc::new(AtomicBool::new(false)), opened: Instant::now(), level: 0 }
+        }
+
+        /// The stream failed soon after opening: ask for less next time.
+        fn step_down(&self) {
+            if self.opened.elapsed() < EARLY && self.level + 1 < LEVELS
+                && LEVEL.compare_exchange(self.level, self.level + 1, Ordering::AcqRel, Ordering::Acquire).is_ok()
+            {
+                log::warn!("audio stream died {} ms after opening: level {} from now on", self.opened.elapsed().as_millis(), self.level + 1);
+            }
         }
 
         fn open(&mut self) -> Result<Stream, AudioError> {
@@ -57,7 +81,12 @@ mod imp {
             let dead = Arc::new(AtomicBool::new(false));
             self.dead = dead.clone();
             let mut rate = 0u32;
-            let build = |sharing: AudioSharingMode| -> Result<AudioStream, AudioError> {
+            let build = |level: u8| -> Result<AudioStream, AudioError> {
+                let (sharing, perf) = match level {
+                    0 => (AudioSharingMode::Exclusive, AudioPerformanceMode::LowLatency),
+                    1 => (AudioSharingMode::Shared, AudioPerformanceMode::LowLatency),
+                    _ => (AudioSharingMode::Shared, AudioPerformanceMode::None),
+                };
                 let out = out.clone();
                 let dead = dead.clone();
                 let mut rate_seen = 0u32;
@@ -65,7 +94,7 @@ mod imp {
                     .direction(AudioDirection::Output)
                     .format(AudioFormat::PCM_Float)
                     .channel_count(2)
-                    .performance_mode(AudioPerformanceMode::LowLatency)
+                    .performance_mode(perf)
                     .sharing_mode(sharing)
                     .usage(AudioUsage::Game)
                     .data_callback(Box::new(move |stream: &AudioStream, data, frames| {
@@ -86,20 +115,36 @@ mod imp {
                     }))
                     .open_stream()
             };
-            let stream = build(AudioSharingMode::Exclusive).or_else(|e| {
-                log::info!("exclusive audio refused ({e:?}); shared");
-                build(AudioSharingMode::Shared)
-            })?;
+            // from the current level down, until a device takes one
+            let mut level = LEVEL.load(Ordering::Acquire);
+            let stream = loop {
+                match build(level) {
+                    Ok(s) => break s,
+                    Err(e) if level + 1 < LEVELS => {
+                        log::info!("audio refused at level {level} ({e:?}); trying level {}", level + 1);
+                        level += 1;
+                    }
+                    Err(e) => return Err(e),
+                }
+            };
+            LEVEL.fetch_max(level, Ordering::AcqRel);
+            self.level = level;
+            self.opened = Instant::now();
             rate = rate.max(stream.sample_rate() as u32);
             let burst = stream.frames_per_burst().max(1);
             // one burst more than the minimum for "Low latency", four for "Stable"
             let _ = stream.set_buffer_size_in_frames(burst * if self.low_latency { 2 } else { 4 });
-            log::info!("audio: {} Hz, burst {}, buffer {}, {:?}", rate, burst, stream.buffer_size_in_frames(), stream.sharing_mode());
+            log::info!("audio: {} Hz, burst {}, buffer {}, {:?}, level {level}", rate, burst, stream.buffer_size_in_frames(), stream.sharing_mode());
             Ok(Stream(stream))
         }
 
         pub fn ensure_running(&mut self) {
-            if self.dead.load(Ordering::Acquire) {
+            // (a disconnected stream doesn't always call the error callback)
+            if self.stream.as_ref().is_some_and(|s| s.state() == AudioStreamState::Disconnected) {
+                self.dead.store(true, Ordering::Release);
+            }
+            if self.stream.is_some() && self.dead.load(Ordering::Acquire) {
+                self.step_down();
                 self.stream = None;
             }
             if self.stream.is_none() {
@@ -114,7 +159,9 @@ mod imp {
             if let Some(s) = &self.stream {
                 if !matches!(s.state(), AudioStreamState::Started | AudioStreamState::Starting) {
                     if let Err(e) = s.request_start() {
+                        // reopened (a level down, if it just opened) on the next try
                         log::error!("could not start audio output: {e:?}");
+                        self.dead.store(true, Ordering::Release);
                     }
                 }
             }

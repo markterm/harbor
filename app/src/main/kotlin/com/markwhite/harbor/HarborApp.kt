@@ -8,6 +8,7 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import com.markwhite.harbor.data.Catalog
 import com.markwhite.harbor.data.FirmwareStore
 import com.markwhite.harbor.data.SaveStore
+import com.markwhite.harbor.data.Screenshots
 import com.markwhite.harbor.data.Settings
 import com.markwhite.harbor.engine.Harbor
 import com.markwhite.harbor.midi.HarborMidiService
@@ -28,6 +29,8 @@ class HarborApp : Application() {
         private set
     lateinit var midi: MidiHub
         private set
+    lateinit var screenshots: Screenshots
+        private set
 
     /** Whether an activity of ours is started. */
     @Volatile var inForeground = false
@@ -43,6 +46,7 @@ class HarborApp : Application() {
         saves = SaveStore(this)
         harbor = Harbor(this, catalog, store, saves, settings)
         midi = MidiHub(this, settings)
+        screenshots = Screenshots(this)
         harbor.recoverRecordings()
         // keep the firmware list current: packages move on the hub as authors release
         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.IO).launch { catalog.refreshIfStale() }

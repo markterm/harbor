@@ -11,9 +11,11 @@ import android.media.midi.MidiManager
 import android.media.midi.MidiOutputPort
 import android.media.midi.MidiReceiver
 import android.os.BatteryManager
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import androidx.core.os.BundleCompat
 import com.markwhite.harbor.data.Settings
 import com.markwhite.harbor.engine.NativeEngine
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -64,11 +66,23 @@ class MidiHub(private val context: Context, private val settings: Settings) {
     fun start() {
         if (started || manager == null) return
         started = true
-        manager.registerDeviceCallback(MidiManager.TRANSPORT_MIDI_BYTE_STREAM, executor, object : MidiManager.DeviceCallback() {
-            override fun onDeviceAdded(device: MidiDeviceInfo) = added(device)
-            override fun onDeviceRemoved(device: MidiDeviceInfo) = removed(device)
-        })
-        for (d in manager.getDevicesForTransport(MidiManager.TRANSPORT_MIDI_BYTE_STREAM)) added(d)
+        // the transport-aware calls are API 33; before that every device is a byte stream, and the
+        // old callback comes on a Handler, so it hops to the executor to keep the same thread
+        if (Build.VERSION.SDK_INT >= 33) {
+            manager.registerDeviceCallback(MidiManager.TRANSPORT_MIDI_BYTE_STREAM, executor, object : MidiManager.DeviceCallback() {
+                override fun onDeviceAdded(device: MidiDeviceInfo) = added(device)
+                override fun onDeviceRemoved(device: MidiDeviceInfo) = removed(device)
+            })
+            for (d in manager.getDevicesForTransport(MidiManager.TRANSPORT_MIDI_BYTE_STREAM)) added(d)
+        } else {
+            @Suppress("DEPRECATION")
+            manager.registerDeviceCallback(object : MidiManager.DeviceCallback() {
+                override fun onDeviceAdded(device: MidiDeviceInfo) = executor.execute { added(device) }
+                override fun onDeviceRemoved(device: MidiDeviceInfo) = executor.execute { removed(device) }
+            }, handler)
+            @Suppress("DEPRECATION")
+            for (d in manager.devices) added(d)
+        }
         val filter = IntentFilter().apply {
             addAction(Intent.ACTION_POWER_CONNECTED)
             addAction(Intent.ACTION_POWER_DISCONNECTED)
@@ -88,7 +102,7 @@ class MidiHub(private val context: Context, private val settings: Settings) {
     private fun isPeripheralPort(d: MidiDeviceInfo): Boolean {
         val p = d.properties
         val name = p.getString(MidiDeviceInfo.PROPERTY_NAME).orEmpty()
-        return d.type == MidiDeviceInfo.TYPE_USB && p.getParcelable(MidiDeviceInfo.PROPERTY_USB_DEVICE, android.hardware.usb.UsbDevice::class.java) == null &&
+        return d.type == MidiDeviceInfo.TYPE_USB && BundleCompat.getParcelable(p, MidiDeviceInfo.PROPERTY_USB_DEVICE, android.hardware.usb.UsbDevice::class.java) == null &&
             (name.contains("Peripheral", ignoreCase = true) || p.getString(MidiDeviceInfo.PROPERTY_MANUFACTURER).isNullOrBlank())
     }
 
@@ -106,7 +120,7 @@ class MidiHub(private val context: Context, private val settings: Settings) {
     }
 
     private fun isOwn(d: MidiDeviceInfo): Boolean =
-        d.type == MidiDeviceInfo.TYPE_VIRTUAL && d.properties.getParcelable("service_info", android.content.pm.ServiceInfo::class.java)?.packageName == context.packageName
+        d.type == MidiDeviceInfo.TYPE_VIRTUAL && BundleCompat.getParcelable(d.properties, "service_info", android.content.pm.ServiceInfo::class.java)?.packageName == context.packageName
 
     private fun added(d: MidiDeviceInfo) {
         // sources are devices with outputs (what they send, we receive); never our own port

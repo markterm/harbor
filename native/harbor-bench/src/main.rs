@@ -69,7 +69,7 @@ fn bench(pkg: &[u8], mhz: u32, jit: bool, ms: u64) -> Result<(f64, usize, bool),
         }
         m.run(100_000);
         if m.halted {
-            return Err(format!("the CPU halted at {} ms", m.soc.periph.ms()));
+            return Err(format!("the CPU halted: {}", m.fault));
         }
         frames += m.soc.periph.audio.len() / 2;
         m.soc.periph.audio.clear();

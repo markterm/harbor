@@ -487,6 +487,7 @@ fn run(shared: Arc<Shared>, cmds: mpsc::Receiver<Cmd>, midi: mpsc::Receiver<Midi
                 let mut v = shared.view.lock().unwrap();
                 if rr.m.halted && v.state == RunState::Running {
                     v.state = RunState::Halted;
+                    v.error = rr.m.fault.clone();
                 }
             }
             std::thread::sleep(Duration::from_millis(2));
@@ -592,8 +593,9 @@ fn run(shared: Arc<Shared>, cmds: mpsc::Receiver<Cmd>, midi: mpsc::Receiver<Midi
             v.midi_dropped = rr.m.soc.periph.midi_dropped();
             v.midi_in = midi_in;
             v.lead = lead;
-            if rr.m.halted {
+            if rr.m.halted && v.state != RunState::Halted {
                 v.state = RunState::Halted;
+                v.error = rr.m.fault.clone();
             }
             if speed_t.elapsed() >= Duration::from_secs(1) {
                 let ms = rr.m.soc.periph.ms();

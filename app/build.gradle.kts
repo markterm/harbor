@@ -27,8 +27,8 @@ android {
         applicationId = "app.harborsynth"
         minSdk = 31
         targetSdk = 37
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 5
+        versionName = "0.1.4"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk { abiFilters += "arm64-v8a" }
     }
@@ -49,6 +49,7 @@ android {
         debug {
             // the emulator is x86_64 (interpreted); phones are arm64 (JIT)
             ndk { abiFilters += "x86_64" }
+            buildConfigField("boolean", "PLAY_CATALOG", "false")
         }
         release {
             isMinifyEnabled = true
@@ -56,6 +57,8 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             // unsigned without the upload key's properties (Play won't take it then)
             if (upload != null) signingConfig = signingConfigs.getByName("upload")
+            // the catalogue Play's content rating (Everyone) was given for: see Catalog.PLAY_HIDDEN
+            buildConfigField("boolean", "PLAY_CATALOG", "true")
         }
         // release code (R8, not debuggable) signed with the debug key: what to judge speed on a
         // phone with, since a debuggable build runs the UI's Kotlin far slower
@@ -72,7 +75,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    buildFeatures { compose = true }
+    buildFeatures { compose = true; buildConfig = true }
 
     sourceSets["main"].jniLibs.directories += rustOut.get().asFile.path
 }

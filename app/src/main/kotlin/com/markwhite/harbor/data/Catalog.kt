@@ -42,6 +42,8 @@ data class FirmwareEntry(
     val hubOnly: Boolean = false,
     /** its author calls it a beta */
     val beta: Boolean = false,
+    /** a screenshot (the Hub's), any size; it may be missing or broken, so it is only ever a nicety */
+    val image: String? = null,
 ) {
     val title: String get() = if (version.isBlank()) name else "$name $version"
     val playable: Boolean get() = `package` != null || byo
@@ -102,7 +104,7 @@ class Catalog(private val context: Context) {
     private val hubCache = File(context.filesDir, "hub-catalog.json")
     private var listed: CatalogFile = load(cache, "firmwares.json", ::parse)
     private var hub: HubFile = load(hubCache, "hub-catalog.json", ::parseHub)
-    private val _entries = MutableStateFlow(merge(listed, hub))
+    private val _entries = MutableStateFlow(shown(merge(listed, hub)))
     val entries: StateFlow<CatalogFile> = _entries
 
     /** When the shown list was fetched (0: the snapshot bundled with the app). */
@@ -140,7 +142,7 @@ class Catalog(private val context: Context) {
             hub = parsed
         }
         if (a.isSuccess) refreshedAt = System.currentTimeMillis()
-        _entries.value = merge(listed, hub)
+        _entries.value = shown(merge(listed, hub))
         a.onFailure { com.markwhite.harbor.engine.EventLog.w("catalog refresh failed: ${it.message}") }
         b.onFailure { com.markwhite.harbor.engine.EventLog.w("hub catalog refresh failed: ${it.message}") }
         if (a.isFailure && b.isFailure) Result.failure(a.exceptionOrNull()!!) else Result.success(Unit)
@@ -164,6 +166,21 @@ class Catalog(private val context: Context) {
         const val HUB = "https://thefirmwarehub.com/"
         const val HUB_CATALOG_URL = HUB + "catalog.json"
         private val json = Json { ignoreUnknownKeys = true }
+
+        /**
+         * Firmwares Play builds don't list: Harbor is rated Everyone, and a shooter in the catalogue
+         * would rate it Teen. Matched on the name too, since the hub may know one by another id.
+         */
+        private val PLAY_HIDDEN = Regex("doom", RegexOption.IGNORE_CASE)
+
+        fun shown(c: CatalogFile, play: Boolean = com.markwhite.harbor.BuildConfig.PLAY_CATALOG): CatalogFile =
+            if (!play) c else c.copy(firmwares = c.firmwares.filterNot { PLAY_HIDDEN.containsMatchIn(it.id) || PLAY_HIDDEN.containsMatchIn(it.name) })
+
+        /**
+         * Where the Hub keeps a firmware's picture: its own page draws them from here, though its
+         * catalog.json doesn't list them. Most are the firmware's screen; some are a banner or a photo.
+         */
+        fun hubImage(hubId: String): String = HUB + "img/" + hubId + ".png"
 
         /** fm1-emu's ids for firmwares the hub knows by another name. */
         private val HUB_ALIASES = mapOf("quest" to "fm1quest")
@@ -192,6 +209,7 @@ class Catalog(private val context: Context) {
                     listedPackage = e.`package`,
                     hub = h.id,
                     beta = h.beta,
+                    image = hubImage(h.id),
                 )
             }
             val listedIds = listed.firmwares.map { it.id }.toSet()
@@ -199,7 +217,7 @@ class Catalog(private val context: Context) {
                 FirmwareEntry(
                     id = h.id, name = h.name.ifBlank { h.id }, version = h.version, author = h.author, about = h.what,
                     repo = h.source ?: h.repo?.let { "https://github.com/$it" }, `package` = HUB + h.pkg, hub = h.id,
-                    sha256 = h.sha256, hubOnly = true, beta = h.beta,
+                    sha256 = h.sha256, hubOnly = true, beta = h.beta, image = hubImage(h.id),
                 )
             }.sortedBy { it.name.lowercase() }
             return listed.copy(firmwares = entries + extra)

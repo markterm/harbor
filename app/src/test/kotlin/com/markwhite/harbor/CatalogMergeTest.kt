@@ -41,4 +41,13 @@ class CatalogMergeTest {
         assertFalse(extra.any { it.id == "fm1quest" || it.id == "purplemonkey" || it.id == "bubba" })
         assertEquals(merged.firmwares.size, merged.firmwares.map { it.id }.toSet().size)
     }
+
+    @Test
+    fun firmwaresOnTheHubTakeItsPictureUnderItsOwnId() {
+        assertEquals("https://thefirmwarehub.com/img/amb.png", merged.firmwares.first { it.id == "amb" }.image)
+        // fm1-emu's "quest" is the hub's "fm1quest"
+        assertEquals("https://thefirmwarehub.com/img/fm1quest.png", merged.firmwares.first { it.id == "quest" }.image)
+        assertTrue(merged.firmwares.filter { it.hubOnly }.all { it.image == Catalog.hubImage(it.id) })
+        assertNull(merged.firmwares.first { it.id == "mvave" }.image)
+    }
 }

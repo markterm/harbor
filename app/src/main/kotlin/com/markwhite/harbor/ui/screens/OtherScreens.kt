@@ -203,7 +203,8 @@ fun AboutScreen(app: HarborApp, onBack: () -> Unit) {
 
 /** In-app summary of docs/privacy-policy.md: keep the two in step. */
 private const val PRIVACY_SUMMARY = "Harbor has no account, ads, analytics or tracking, and sends nothing about you anywhere. " +
-    "It fetches the firmware lists from fm1-emu's site and the FM-1 Firmware Hub, and a firmware from where its author publishes it when you choose one; " +
+    "It fetches the firmware lists from fm1-emu's site and the FM-1 Firmware Hub, the firmwares' screenshots from the Hub, " +
+    "and a firmware from where its author publishes it when you choose one; " +
     "those servers see an ordinary web request. Firmwares, their saves and your settings stay on this device unless you export a backup. " +
     "Recordings are saved to the Music/Harbor folder on this device and go nowhere unless you share them. " +
     "Bluetooth is used only to find and play Bluetooth MIDI instruments, when you pair one, never for location. " +

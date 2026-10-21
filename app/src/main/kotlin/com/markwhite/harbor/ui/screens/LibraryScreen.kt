@@ -7,6 +7,12 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.height
+import androidx.compose.runtime.produceState
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.draw.clip
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -215,6 +221,7 @@ private fun FirmwareCard(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onDetails),
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            FirmwareImage(app, e.image, null, 160.dp)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Monogram(e.id, e.name)
                 Column(Modifier.weight(1f)) {
@@ -251,6 +258,28 @@ private fun FirmwareCard(
 }
 
 /**
+ * A firmware's screenshot at its own shape, no taller than [maxHeight], centred on the dark of a
+ * screen when it is narrower than the space. Nothing at all while it loads, or when the Hub has no
+ * usable one: the card reads the same without it.
+ */
+@Composable
+private fun FirmwareImage(app: HarborApp, url: String?, description: String?, maxHeight: Dp) {
+    if (url == null) return
+    val image by produceState(app.screenshots.cached(url), url) { if (value == null) value = app.screenshots.load(url) }
+    val img = image ?: return
+    // a sliver or a tower would be a broken image, not a screenshot: keep the frame sensible
+    val ratio = (img.width.toFloat() / img.height).coerceIn(0.75f, 3f)
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        Box(
+            Modifier.fillMaxWidth().height(minOf(maxWidth / ratio, maxHeight)).clip(RoundedCornerShape(12.dp)).background(Tokens.well),
+            contentAlignment = Alignment.Center,
+        ) {
+            Image(img, description, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
+        }
+    }
+}
+
+/**
  * A firmware's tile: its initial on a colour of its own (from its id, so it never changes), for
  * telling 49 entries apart at a glance.
  */
@@ -271,6 +300,7 @@ fun FirmwareDetails(app: HarborApp, e: FirmwareEntry, onPlay: () -> Unit, onOpen
     val versions = installed.filter { it.catalogId == e.id }.sortedByDescending { it.addedAt }
     var confirmReset by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        FirmwareImage(app, e.image, "Screenshot of ${e.name}", 280.dp)
         Text(e.title, style = MaterialTheme.typography.headlineSmall)
         Text("by " + listOf(e.author, e.license).filter { it.isNotBlank() }.joinToString(" · "), color = Tokens.dim)
         if (e.hubOnly) Text("From the FM-1 Firmware Hub; not yet checked in the emulator. Its licence is in its source.",

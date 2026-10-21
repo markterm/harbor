@@ -15,7 +15,9 @@ doesn't send information about you or your device to its developer or to anyone 
 Harbor connects to the internet only to:
 
 - fetch the list of firmwares from fm1-emu's site (`joakimeriksson.github.io`) and from the FM-1
-  Firmware Hub (`thefirmwarehub.com`), at most once a day or when you refresh the list, and
+  Firmware Hub (`thefirmwarehub.com`), at most once a day or when you refresh the list,
+- fetch each firmware's screenshot from the Firmware Hub when the firmware list shows it (kept on
+  the device and checked for changes once a week), and
 - download a firmware when you choose to play it, from the Firmware Hub or from where its author
   publishes it.
 

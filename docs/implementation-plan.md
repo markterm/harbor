@@ -138,6 +138,56 @@ engineering milestones and risks.
 - [x] Notes at the left edge were lost to the Back gesture (the 30 dp edge zone). The Play screen
   now hides the navigation bar (which lifts Android's 200 dp cap on gesture exclusion) and
   excludes the whole panel, keeping the full screen width.
+- [x] Found on a second phone: a black LCD and silence after a relaunch, with "audio output
+  closed: reopening" every second. The stream died at once on each reopen and every reopen asked
+  for an exclusive stream again. A stream that dies within 3 s of opening, or won't start, now
+  makes the next open ask for less (shared, then shared without low latency, `audio.rs`), retries
+  back off, and after five a message says so. Not yet confirmed on that phone: its native log
+  (`adb logcat -s harbor`) would say why the stream died.
+- [x] Play builds (release, `BuildConfig.PLAY_CATALOG`) hide FM-1 Doom from the catalogue: Harbor
+  is rated Everyone, and a shooter would make it Teen. Debug builds list it.
+- [ ] FM-1 Doom's right fifth repeats its left fifth: a firmware bug (its 320→240 column map is
+  `uint8_t`, so it wraps at 256), not Harbor's or fm1-emu's. Report it to zvenson/fm1doom.
+- [ ] On a Pixel 7 Pro, Felucca drops frames in the background with "Keep playing in background"
+  on (0.96x at 240 MHz, then 200 MHz); seen while filming Play's foreground-service video.
+- [x] OberVave 1.5.3 halted about 8 ms after any key was released: `64 e8 5f bc`,
+  `[r11+92] &= ~r12`, which fm1-isa's table couldn't decode because its corpus never had a
+  register above r7 there. `patches/0002` widens the field (bits 24-27), and a machine test checks
+  the decode. A halt now keeps its reason (instruction and pc, cores, time since boot), which goes
+  into the event log and so into "Copy a report"; before, it was dropped.
+- [ ] A sweep of the Hub's 79 packages (4 s each, interpreted, three keys held): CTL-1, MC-1 and
+  386DX halt on other undecoded `0x?064` words (`2300f064`, `0e00f064`, `ae00f064`). Kawa halts
+  at 829 ms with no input (`60 ff 01 00 …`). Bubba, Melodee and Tonitor make no sound. 13 start
+  the second core; the halts come from decoding, not from dual-core running. Report upstream
+  (`docs/upstream-issue-decoder.md`) before patching more of the table locally.
+- [x] Bundled Hub snapshot refreshed to 21 Oct (74 → 79 firmwares; the Hub's catalog.json grew
+  new fields, which the parser ignores). fm1-emu's list hadn't changed.
+- [ ] fm1-editor.com/firmware lists nine firmwares that neither the Hub nor fm1-emu carries yet
+  (Bigorna, Gnomad, Haunted FM1, Modular One, Synthesthetic, Clipper, ESTAMPIE, FN ACID, Prysm):
+  their packages are GitHub releases or installer pages. Harbor gets them once the Hub lists
+  them (daily refresh, no app update); a third catalogue source would be a decision of its own.
+- [x] Reported on a Xiaomi Mi 10T (Android 12): the app closed at once on every launch.
+  `MidiHub.start()` called `MidiManager`'s transport-aware methods and `Bundle.getParcelable(key,
+  Class)`, all API 33, so Android 12 (31/32) threw `NoSuchMethodError` from the process's first
+  `onStart`. Below 33 it now uses the older calls and `BundleCompat`. Reproduced and checked on an
+  API 31 emulator (`harbor_api31`); lint now has no `NewApi` errors, so keep it that way.
+- [x] The Library shows each firmware's screenshot from the Hub (`img/<hub id>.png`, which its own
+  page uses; catalog.json doesn't list them). `Screenshots` keeps them in the cache directory,
+  revalidates weekly by ETag, caps them at 2 MB and decodes them to at most 800 px a side. Cards
+  draw them at their own shape (square screens, 2:1 banners) up to 160 dp tall, details up to
+  280 dp; a missing, broken or not-yet-loaded one leaves the card as it was. If the Hub adds an
+  image field to catalog.json, `Catalog.hubImage` is the one place to change.
+- [x] The firmware tests failed about one suite in three (`boots_draws_and_plays_a_key`,
+  `records_what_the_firmware_plays`): Running, sound flowing, but `lcd_rev` stuck at 2. Not a
+  hang: the machine is deterministic, and silent Felucca draws its splash (110 ms) and its screen
+  (595 ms), each in 1-3 ms of partial frames, then holds still. The view samples the LCD every
+  16 ms of wall time, so it sees two changes, and the tests' `lcd_rev > 2` passed only when a
+  sample caught a frame half drawn. They now wait for `lcd_rev >= 2` (`drawn`) and print the
+  engine's state when a wait times out; clean in 8 runs alone and 4 at double load.
+- [ ] A fresh install on the Pixel 7 Pro (Android 16) asked for notification permission at first
+  launch, before onboarding. Harbor's code asks only when "Keep playing in background" is turned
+  on (`rememberBackgroundToggle`), so find what triggers it before the Play review, which
+  `docs/play-store.md` describes the other way.
 
 ---
 

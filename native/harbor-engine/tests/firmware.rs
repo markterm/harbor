@@ -43,6 +43,13 @@ fn boot(engine: &Engine, pkg: Vec<u8>, auto_clock: bool) {
     engine.send(Cmd::Boot(Boot { pkg: Arc::new(pkg), sectors: vec![], mhz: 240, auto_clock, syx: None, jit: true, id: 1 }));
 }
 
+/// Running, with two screens drawn: Felucca's splash, then its own (110 and 595 ms after boot).
+/// A silent firmware's screen then holds still, and the view samples it every 16 ms, so asking for
+/// more than two changes passed only when a sample caught a frame half drawn.
+fn drawn(v: &harbor_engine::engine::View) -> bool {
+    v.state == RunState::Running && v.lcd_rev >= 2
+}
+
 fn wait_for(engine: &Engine, timeout: Duration, mut f: impl FnMut(&harbor_engine::engine::View) -> bool) -> bool {
     let t = Instant::now();
     while t.elapsed() < timeout {
@@ -51,6 +58,12 @@ fn wait_for(engine: &Engine, timeout: Duration, mut f: impl FnMut(&harbor_engine
         }
         std::thread::sleep(Duration::from_millis(50));
     }
+    // what it was doing instead, so a timeout can be told from a halt or a stall
+    let v = engine.shared.view.lock().unwrap();
+    eprintln!(
+        "timed out: state {:?}, lcd_rev {}, speed {:.2}, jit {}, late {}, starved {}, error {:?}",
+        v.state, v.lcd_rev, v.speed, v.jit, v.late, v.starved, v.error
+    );
     false
 }
 
@@ -61,7 +74,7 @@ fn boots_draws_and_plays_a_key() {
     let stop = Arc::new(AtomicBool::new(false));
     let dev = device(out, stop.clone());
     boot(&engine, pkg, false);
-    assert!(wait_for(&engine, BOOT_WAIT, |v| v.state == RunState::Running && v.lcd_rev > 2), "booted and drew");
+    assert!(wait_for(&engine, BOOT_WAIT, drawn), "booted and drew");
     std::thread::sleep(Duration::from_millis(1500));
     engine.send(Cmd::Key { id: 21, down: true }); // C4
     std::thread::sleep(Duration::from_millis(800));
@@ -186,7 +199,7 @@ fn records_what_the_firmware_plays() {
     let stop = Arc::new(AtomicBool::new(false));
     let dev = device(out, stop.clone());
     boot(&engine, pkg, false);
-    assert!(wait_for(&engine, BOOT_WAIT, |v| v.state == RunState::Running && v.lcd_rev > 2), "booted");
+    assert!(wait_for(&engine, BOOT_WAIT, drawn), "booted");
     std::thread::sleep(Duration::from_millis(1500));
 
     let path = std::env::temp_dir().join(format!("harbor-rec-{}.wav", std::process::id()));

@@ -46,6 +46,8 @@ pub struct Machine {
     pub soc: Soc,
     pending_tick: bool,
     pub halted: bool,
+    /// Why the CPU halted (the instruction fault and its pc), for the report.
+    pub fault: String,
     /// the flash as booted (before saved sectors and a DX7 bank): what a save is compared with
     flash0: Vec<u8>,
 }
@@ -79,14 +81,16 @@ impl Machine {
                 .collect();
             restore_flash(&mut soc, &changed);
         }
-        Ok(Machine { cpu, cpu1: None, soc, pending_tick: false, halted: false, flash0 })
+        Ok(Machine { cpu, cpu1: None, soc, pending_tick: false, halted: false, fault: String::new(), flash0 })
     }
 
     /// fm1-live's loop: cpu0's blocks, cpu1 beside once the firmware releases it.
     pub fn run(&mut self, n: u32) {
         let jit = self.cpu.jit_on;
         let Machine { cpu, cpu1, soc, pending_tick, .. } = self;
-        if machine::run_dual(cpu1, soc, n, RAM_SIZE, jit, |soc, k| machine::run_blocks(cpu, soc, k, pending_tick)).is_err() {
+        if let Err(e) = machine::run_dual(cpu1, soc, n, RAM_SIZE, jit, |soc, k| machine::run_blocks(cpu, soc, k, pending_tick)) {
+            let core = if cpu1.is_some() { "two cores" } else { "one core" };
+            self.fault = format!("{e} ({core}, {} ms after boot)", soc.periph.ms());
             self.halted = true;
         }
     }
@@ -131,9 +135,14 @@ mod tests {
     use super::*;
 
     fn machine() -> Machine {
-        let soc = Soc::new(RAM_SIZE, vec![0x55; 0x80000]);
+        machine_of(0x55)
+    }
+
+    /// A machine whose flash is all `fill`.
+    fn machine_of(fill: u8) -> Machine {
+        let soc = Soc::new(RAM_SIZE, vec![fill; 0x80000]);
         let flash0 = soc.flash.mem.clone();
-        Machine { cpu: Cpu::new(0x0200_0120), cpu1: None, soc, pending_tick: false, halted: false, flash0 }
+        Machine { cpu: Cpu::new(0x0200_0120), cpu1: None, soc, pending_tick: false, halted: false, fault: String::new(), flash0 }
     }
 
     #[test]
@@ -153,5 +162,22 @@ mod tests {
     fn a_malformed_package_is_an_error_not_a_panic() {
         assert!(Machine::boot(&[0u8; 100], &[], 240, None, false).is_err());
         assert!(Machine::boot(&vec![0x42u8; 960], &[], 240, None, false).is_err());
+    }
+
+    #[test]
+    fn a_halt_keeps_its_reason() {
+        // 04 04 isn't an instruction: the CPU stops at the entry, and the report needs to say where
+        let mut m = machine_of(0x04);
+        m.run(10_000);
+        assert!(m.halted);
+        assert!(m.fault.contains("at pc 0x"), "{}", m.fault);
+    }
+
+    #[test]
+    fn and_not_decodes_with_a_register_above_r7() {
+        // OberVave's `[r11+92] &= ~r12` (64 e8 5f bc), which halted it at every key release
+        // until patches/0002 widened the register field
+        let (len, name) = fm1_core::decode_info(0xbc5f_e864, 0x0200_16ce).expect("undecoded: is patch 0002 applied?");
+        assert_eq!((len, name), (4, "r_i_and_r_l4"));
     }
 }

@@ -1,0 +1,41 @@
+diff --git a/crates/fm1-isa/src/generated_isa.rs b/crates/fm1-isa/src/generated_isa.rs
+index 15c7abd..5165dd3 100644
+--- a/crates/fm1-isa/src/generated_isa.rs
++++ b/crates/fm1-isa/src/generated_isa.rs
+@@ -64930,7 +64930,7 @@ pub static ISA: &[IsaEntry] = &[
+         syntax: "[R+#i] &= ~R",
+         len: 4,
+         count: 64,
+-        mask: 0x000000000883ffff_u64,
++        mask: 0x000000000083ffff_u64,
+         match_: 0x000000000003e864_u64,
+         group: "misc",
+         alt: &[
+@@ -64965,7 +64965,7 @@ pub static ISA: &[IsaEntry] = &[
+         slots: &[
+             SlotSpec { kind: SlotKind::Imm, pieces: &[(28, 31)], mult: 0, adj: 0, hi: 0, lo: 0 },
+             SlotSpec { kind: SlotKind::Scaled, pieces: &[(18, 22)], mult: 4, adj: 0, hi: 0, lo: 0 },
+-            SlotSpec { kind: SlotKind::Imm, pieces: &[(24, 26)], mult: 0, adj: 0, hi: 0, lo: 0 },
++            SlotSpec { kind: SlotKind::Imm, pieces: &[(24, 27)], mult: 0, adj: 0, hi: 0, lo: 0 },
+         ],
+     },
+     IsaEntry {
+diff --git a/isa/fm1.yaml b/isa/fm1.yaml
+index 1d95344..60697c3 100644
+--- a/isa/fm1.yaml
++++ b/isa/fm1.yaml
+@@ -6815,12 +6815,12 @@ instructions:
+   - name: r_i_and_r_l4
+     syntax: "[R+#i] &= ~R"
+     len: 4
+-    mask: "0883ffff"
++    mask: "0083ffff"
+     match: "0003e864"
+     group: store
+     fields:
+       f0: [18, 22]
+-      f1: [24, 26]
++      f1: [24, 27]
+       f2: [28, 31]
+     count: 64
+     samples: ["64e80301", "64e80302", "64e80303", "64e80310", "64e80312", "64e80323", "64e80356", "64e80364", "64e80365", "64e80367", "64e803c6", "64e80b01", "64e80b03", "64e80be0", "64e80f01", "64e80f02", "64e80fe0", "64e81302", "64e81312", "64e81702", "64e81712", "64e81732", "64e81f45", "64e82303", "64e85ba0"]

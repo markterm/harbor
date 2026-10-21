@@ -122,6 +122,8 @@ class Harbor(
     private var downloadJob: Job? = null
     private var paused = false
     private var lastAudioRetry = 0L
+    /** Reopens since the output last ran; spaces the retries out and keeps the log readable. */
+    private var audioRetries = 0
     private var transientLoss = false
 
     private val audio = context.getSystemService(AudioManager::class.java)
@@ -501,9 +503,16 @@ class Harbor(
             val d = _docked.value
             // a stream closed by a route change (headphones, USB audio): reopen on the new device
             val nowMs = System.currentTimeMillis()
-            if (d != null && !paused && !s.audioRunning && nowMs - lastAudioRetry > 1000) {
+            // (each early failure makes the native side ask the device for less; see audio.rs)
+            if (s.audioRunning) {
+                if (audioRetries > 1) EventLog.i("audio output running again after $audioRetries tries")
+                audioRetries = 0
+            } else if (d != null && !paused && nowMs - lastAudioRetry > 1000L * minOf(1 shl minOf(audioRetries, 3), 8)) {
                 lastAudioRetry = nowMs
-                EventLog.w("audio output closed (route change or error): reopening")
+                audioRetries++
+                if (audioRetries == 1 || audioRetries % 10 == 0)
+                    EventLog.w("audio output closed (route change or error): reopening (try $audioRetries)")
+                if (audioRetries == 5) _events.tryEmit(HarborEvent.Message("Harbor can't open the audio output. Try another output, or restart the phone."))
                 NativeEngine.start(leadFrames(), settings.bufferMode.value == BufferMode.LowLatency)
             }
             if (d != null && s.bootId == currentBoot) {
@@ -514,7 +523,7 @@ class Harbor(
                             runningSinceMs = nowMs
                             EventLog.i("boot #${s.bootId} running after ${nowMs - bootStartedMs} ms: ${s.mhz} MHz, JIT ${if (s.jit) "on" else "off"}")
                         }
-                        RunState.Halted -> EventLog.w("boot #${s.bootId} halted: the emulated CPU stopped (${s.mhz} MHz, speed ${"%.2f".format(s.speed)}x)")
+                        RunState.Halted -> EventLog.w("boot #${s.bootId} halted: the emulated CPU stopped (${s.mhz} MHz, JIT ${if (s.jit) "on" else "off"}, speed ${"%.2f".format(s.speed)}x): ${NativeEngine.error()}")
                         RunState.Failed -> EventLog.w("boot #${s.bootId} failed: ${NativeEngine.error()}")
                         RunState.Idle -> {}
                     }
