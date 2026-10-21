@@ -28,8 +28,9 @@ import androidx.compose.ui.unit.dp
 import kotlin.random.Random
 
 /**
- * The panel's materials. The FM-1 is sold in several colours; [Graphite] is Harbor's default and
- * [Dusk] keeps fm1-emu's own panel colours.
+ * The panel's materials. The FM-1 is sold in several colours; [Graphite] is Harbor's default,
+ * [Dusk] keeps fm1-emu's own panel colours, and Purple to Red follow the anodised cases sellers
+ * list. Every case keeps the cream silicone keys and dark knobs.
  */
 data class Finish(
     val id: String,
@@ -97,7 +98,69 @@ val Arctic = Finish(
     grain = 0.07f,
 )
 
-val Finishes = listOf(Graphite, Dusk, Arctic)
+// the coloured cases: the colour in the body and caps, silk light enough to read on it
+val Purple = Finish(
+    id = "purple", label = "Purple",
+    bodyTop = Color(0xFF4B3B66), bodyBot = Color(0xFF3A2D51), bodyEdge = Color(0x40FFFFFF),
+    tray = Color(0xFF17121F), trayRim = Color(0xFF5D4B7B),
+    silk = Color(0xFFE8E1F2), silkDim = Color(0xFFA698BA),
+    capTop = Color(0xFF4E3E69), capBot = Color(0xFF3D3055), capRim = Color(0xFF61507E), capInk = Color(0xFFE8E1F2),
+    naturalTop = Graphite.naturalTop, naturalBot = Graphite.naturalBot, naturalInk = Graphite.naturalInk, keyGlow = Graphite.keyGlow,
+    sharpTop = Graphite.sharpTop, sharpBot = Graphite.sharpBot,
+    knobHi = Color(0xFF3F3A4A), knobLo = Color(0xFF100E14), pointer = Color(0xFFF4F1EA), accent = Color(0xFFFFA43A),
+    grain = 0.05f,
+)
+
+// light enough that amber vanishes on it: its LEDs and pointers are a warm white, its silk dark
+val Orange = Finish(
+    id = "orange", label = "Orange",
+    bodyTop = Color(0xFFE9762C), bodyBot = Color(0xFFD0611D), bodyEdge = Color(0x66FFFFFF),
+    tray = Color(0xFF2A1A10), trayRim = Color(0xFFF08D48),
+    silk = Color(0xFF2E1B0D), silkDim = Color(0xFF7D4521),
+    capTop = Color(0xFFEE7E35), capBot = Color(0xFFD86A22), capRim = Color(0xFFF49656), capInk = Color(0xFF2E1B0D),
+    naturalTop = Graphite.naturalTop, naturalBot = Graphite.naturalBot, naturalInk = Graphite.naturalInk, keyGlow = Color(0xFFFFE6B8),
+    sharpTop = Graphite.sharpTop, sharpBot = Graphite.sharpBot,
+    knobHi = Graphite.knobHi, knobLo = Graphite.knobLo, pointer = Color(0xFFF4F1EA), accent = Color(0xFFFFF1D2),
+    grain = 0.07f,
+)
+
+val Navy = Finish(
+    id = "navy", label = "Navy",
+    bodyTop = Color(0xFF2B3651), bodyBot = Color(0xFF1F283E), bodyEdge = Color(0x40FFFFFF),
+    tray = Color(0xFF111522), trayRim = Color(0xFF3B4867),
+    silk = Color(0xFFDDE1EB), silkDim = Color(0xFF8C93A7),
+    capTop = Color(0xFF2D3854), capBot = Color(0xFF222B42), capRim = Color(0xFF3F4B6A), capInk = Color(0xFFDDE1EB),
+    naturalTop = Graphite.naturalTop, naturalBot = Graphite.naturalBot, naturalInk = Graphite.naturalInk, keyGlow = Graphite.keyGlow,
+    sharpTop = Graphite.sharpTop, sharpBot = Graphite.sharpBot,
+    knobHi = Color(0xFF383D4A), knobLo = Color(0xFF0E1015), pointer = Color(0xFFF4F1EA), accent = Color(0xFFFFA43A),
+    grain = 0.05f,
+)
+
+val Green = Finish(
+    id = "green", label = "Green",
+    bodyTop = Color(0xFF2D4537), bodyBot = Color(0xFF213429), bodyEdge = Color(0x40FFFFFF),
+    tray = Color(0xFF0F1712), trayRim = Color(0xFF3D5948),
+    silk = Color(0xFFDEE7E0), silkDim = Color(0xFF8FA296),
+    capTop = Color(0xFF2F4739), capBot = Color(0xFF24372C), capRim = Color(0xFF405D4C), capInk = Color(0xFFDEE7E0),
+    naturalTop = Graphite.naturalTop, naturalBot = Graphite.naturalBot, naturalInk = Graphite.naturalInk, keyGlow = Graphite.keyGlow,
+    sharpTop = Graphite.sharpTop, sharpBot = Graphite.sharpBot,
+    knobHi = Color(0xFF39413C), knobLo = Color(0xFF0E1210), pointer = Color(0xFFF4F1EA), accent = Color(0xFFFFA43A),
+    grain = 0.05f,
+)
+
+val Red = Finish(
+    id = "red", label = "Red",
+    bodyTop = Color(0xFFA72C30), bodyBot = Color(0xFF8A2125), bodyEdge = Color(0x4DFFFFFF),
+    tray = Color(0xFF1E0E0F), trayRim = Color(0xFFB9494C),
+    silk = Color(0xFFF4E4E1), silkDim = Color(0xFFCB9894),
+    capTop = Color(0xFFAA3034), capBot = Color(0xFF8F2528), capRim = Color(0xFFC04B4E), capInk = Color(0xFFF4E4E1),
+    naturalTop = Graphite.naturalTop, naturalBot = Graphite.naturalBot, naturalInk = Graphite.naturalInk, keyGlow = Color(0xFFFFC27A),
+    sharpTop = Graphite.sharpTop, sharpBot = Graphite.sharpBot,
+    knobHi = Graphite.knobHi, knobLo = Graphite.knobLo, pointer = Color(0xFFF4F1EA), accent = Color(0xFFFFB24A),
+    grain = 0.06f,
+)
+
+val Finishes = listOf(Graphite, Dusk, Arctic, Purple, Orange, Navy, Green, Red)
 fun finishOf(id: String) = Finishes.firstOrNull { it.id == id } ?: Graphite
 
 val LocalFinish = staticCompositionLocalOf { Graphite }

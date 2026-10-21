@@ -180,4 +180,12 @@ mod tests {
         let (len, name) = fm1_core::decode_info(0xbc5f_e864, 0x0200_16ce).expect("undecoded: is patch 0002 applied?");
         assert_eq!((len, name), (4, "r_i_and_r_l4"));
     }
+
+    #[test]
+    fn pair_head_and_not_shifted_decodes() {
+        // DUELL's `r1 = r1 & ~(1 << r3) #` (94 f1 13 13), which halted it when HOME was pressed
+        // until patches/0004 added the pair-head twin of the and-not form
+        let (len, name) = fm1_core::decode_info(0x1313_f194, 0x0202_dc7c).expect("undecoded: is patch 0004 applied?");
+        assert_eq!((len, name), (4, "r_mov_r_i_lsl_r_9"));
+    }
 }

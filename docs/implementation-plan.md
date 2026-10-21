@@ -190,7 +190,20 @@ engineering milestones and risks.
   registers that read back what was written (and, or, xor; the RTC bank). A sweep of the Hub's 78
   packages with and without it changes only Melodee. On the Pixel 7 Pro it runs two cores at
   0.85x at 240 MHz with a key held; the automatic clock steps it to 200 MHz (1.16x, no late
-  frames). Report upstream with 0002's issue.
+  frames). Upstream as fm1-emu#34.
+- [x] Panel finishes in the FM-1's case colours: Purple, Orange, Navy, Green and Red beside
+  Graphite, Dusk and Arctic (the colours sellers list; keys stay cream). Orange is light enough
+  that amber vanishes on it, so its LEDs are a warm white and its silk dark. Eight names don't
+  fit `Segmented`, so the setting is a `SwatchChoice` (Common.kt): case-coloured discs that wrap.
+- [x] DUELL 0.2.20 halted when HOME was pressed: `94 f1 13 13`, `r1 = r1 & ~(1 << r3) #`, the
+  pair-head (`#`, f1) twin of fm1-isa's `r_mov_r_i_lsl_r_l4` (e1), missing from the table as
+  `r_mov_r_i_lsl_r_5` is the and form's. `patches/0004` adds it (slots as its twin's); DUELL now
+  takes HOME and every button, and a sweep of the Hub's packages is otherwise unchanged.
+  Upstream as fm1-emu#35 (and 0002 as #33), each with an fm1-core test that runs the instruction.
+- [ ] "The ARP button can be flickery": on the host (interpreted, the engine's 25 ms windows) the
+  ARP LED is steady in all 78 packages; FiMba blinks it on purpose. Next: which firmware, and
+  whether it is a blink or a shimmer; then check the LED's lit-time accounting with the JIT on a
+  phone (cycles counted per block could make a dimmed LED's duty noisy).
 - [ ] A fresh install on the Pixel 7 Pro (Android 16) asked for notification permission at first
   launch, before onboarding. Harbor's code asks only when "Keep playing in background" is turned
   on (`rememberBackgroundToggle`), so find what triggers it before the Play review, which

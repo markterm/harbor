@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -161,6 +162,48 @@ fun <T> Segmented(options: List<Pair<T, String>>, value: T, onChange: (T) -> Uni
                     text, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.labelLarge,
                     color = if (on) Tokens.amberHi else Tokens.ink, modifier = Modifier.padding(horizontal = 6.dp),
                 )
+            }
+        }
+    }
+}
+
+/** One colour in a [SwatchChoice]: the material's light and shadow, and the edge round it. */
+data class Swatch<T>(val value: T, val label: String, val top: Color, val bottom: Color, val rim: Color)
+
+/**
+ * A choice of colours: a disc of each, named underneath, wrapping onto more lines as needed,
+ * the choice ringed amber. For lists too long for [Segmented].
+ */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+fun <T> SwatchChoice(label: String, options: List<Swatch<T>>, value: T, onChange: (T) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text(label, style = MaterialTheme.typography.bodyLarge)
+        androidx.compose.foundation.layout.FlowRow(
+            Modifier.fillMaxWidth().selectableGroup(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            for (o in options) {
+                val on = o.value == value
+                Column(
+                    Modifier.width(64.dp).clip(RoundedCornerShape(12.dp)).selectable(on, role = Role.RadioButton) { onChange(o.value) }
+                        .padding(vertical = 4.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    val disc = androidx.compose.foundation.shape.CircleShape
+                    Box(
+                        Modifier.size(44.dp)
+                            .border(2.dp, if (on) Tokens.amber else Color.Transparent, disc).padding(4.dp)
+                            .clip(disc).background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(o.top, o.bottom)))
+                            .border(1.dp, o.rim, disc),
+                    )
+                    Text(
+                        o.label, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.labelMedium,
+                        color = if (on) Tokens.amberHi else Tokens.dim,
+                    )
+                }
             }
         }
     }

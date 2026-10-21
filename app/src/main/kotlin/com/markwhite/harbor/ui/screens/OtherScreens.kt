@@ -72,7 +72,7 @@ fun ControlsScreen(app: HarborApp, onBack: () -> Unit) {
             SwitchRow("Keys", s.hapticKeys.collectAsState().value, onChange = s::setHapticKeys)
         }
         Section("Display") {
-            Choice("Panel finish", com.markwhite.harbor.ui.panel.Finishes.map { it.id to it.label }, s.finish.collectAsState().value, s::setFinish)
+            SwatchChoice("Panel finish", com.markwhite.harbor.ui.panel.Finishes.map { Swatch(it.id, it.label, it.bodyTop, it.bodyBot, it.trayRim) }, s.finish.collectAsState().value, s::setFinish)
             SwitchRow("Smooth LCD scaling", s.smoothLcd.collectAsState().value, "Off: pixel-exact", s::setSmoothLcd)
             SwitchRow("Immersive in landscape", s.immersive.collectAsState().value, "Hide the status bar while playing", s::setImmersive)
         }
