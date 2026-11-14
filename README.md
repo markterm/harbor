@@ -59,3 +59,5 @@ own firmware is bring-your-own.
 ```sh
 tools/m0-bench.sh DIR_WITH_FWSC_FILES      # writes docs/m0-results/<model>.tsv
 ```
+
+You can also try Harbor in the browser, no flashing needed, in the free community [FM-1 Emulator](https://fm1-emulator.atst.tools/).
